@@ -1,6 +1,7 @@
 package com.lucasdias.nibble.auth;
 
 import com.lucasdias.nibble.user.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -31,5 +32,11 @@ public class JwtService {
                 .expiration(Date.from(expiresAt))
                 .signWith(key)
                 .compact();
+    }
+
+    public Long parseUserId(String jwt) {
+        SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+        Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(jwt).getPayload();
+        return Long.valueOf(claims.getSubject());
     }
 }
