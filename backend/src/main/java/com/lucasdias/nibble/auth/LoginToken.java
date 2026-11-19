@@ -40,4 +40,9 @@ public class LoginToken {
         this.codeHash = codeHash;
         this.expiresAt = expiresAt;
     }
+
+    public void markUsed() {
+         this.usedAt = Instant.now();
+    }
+
 }

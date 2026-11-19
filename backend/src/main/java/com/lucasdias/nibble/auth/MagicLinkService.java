@@ -3,9 +3,11 @@ package com.lucasdias.nibble.auth;
 import com.lucasdias.nibble.user.User;
 import com.lucasdias.nibble.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -43,6 +45,37 @@ public class MagicLinkService {
         message.setSubject("Your Nibble login link");
         message.setText("Tap to log in: nibble://login?token=" + token + "\n\nOr type this code: " + code);
         mailSender.send(message);
+    }
+
+    public User verifyToken(String token) {
+        LoginToken loginToken = loginTokenRepository.findByTokenHash(sha256(token))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+
+        return consume(loginToken);
+    }
+
+    public User verifyCode(String email, String code) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+
+        LoginToken loginToken = loginTokenRepository.findByUserAndCodeHash(user, sha256(code))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+
+        return consume(loginToken);
+    }
+
+    private User consume(LoginToken loginToken){
+        if (Instant.now().isAfter(loginToken.getExpiresAt())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        if (loginToken.getUsedAt() != null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        loginToken.markUsed();
+        loginTokenRepository.save(loginToken);
+
+        return loginToken.getUser();
     }
 
     private String sha256(String value) {

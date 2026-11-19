@@ -16,4 +16,14 @@ public class AuthController {
     public void requestMagicLink(@Valid @RequestBody MagicLinkRequest request) {
          magicLinkService.requestLink(request.email());
     }
+
+    @PostMapping("/auth/verify")
+    public String verifyToken(@Valid @RequestBody VerifyTokenRequest request){
+        return magicLinkService.verifyToken(request.token()).getEmail();
+    }
+
+    @PostMapping("/auth/verify-code")
+    public String verifyCode(@Valid @RequestBody VerifyCodeRequest request){
+        return magicLinkService.verifyCode(request.email(), request.code()).getEmail();
+    }
 }
