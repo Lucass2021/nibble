@@ -12,10 +12,12 @@ public class TopicController {
 
     @PostMapping("/topics")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public void create(
+    public GeneratedTopic create(
             @RequestHeader("X-OpenRouter-Key") String apiKey,
-            @Valid @RequestBody CreateTopicRequest request) {
-        llmClient.generate(request.title(), apiKey);
+            @RequestHeader(value = "Accept-Language", defaultValue = "en") String language,
+            @Valid @RequestBody CreateTopicRequest request
+    ) {
+        return llmClient.generate(request.title(), language, apiKey);
     }
 
 }

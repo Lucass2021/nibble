@@ -19,7 +19,7 @@ public class AuthController {
          magicLinkService.requestLink(request.email());
     }
 
-    @PostMapping("/auth/verify")
+    @PostMapping("/auth/verify-token")
     public AuthResponse verifyToken(@Valid @RequestBody VerifyTokenRequest request){
         User user = magicLinkService.verifyToken(request.token());
         String jwt = jwtService.generate(user);
