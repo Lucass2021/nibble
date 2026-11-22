@@ -3,12 +3,11 @@ package com.lucasdias.nibble.topic.infrastructure.llm.openrouter;
 import com.lucasdias.nibble.topic.domain.GeneratedQuestion;
 import com.lucasdias.nibble.topic.domain.GeneratedTopic;
 import com.lucasdias.nibble.topic.domain.LlmClient;
+import com.lucasdias.nibble.topic.domain.LlmResponseException;
 import jakarta.validation.Validator;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -92,11 +91,11 @@ public class OpenRouterClient implements LlmClient {
         try {
             generatedTopic = jsonMapper.readValue(content, GeneratedTopic.class);
         } catch (JacksonException error) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "LLM returned invalid JSON");
+            throw new LlmResponseException("LLM returned invalid JSON");
         }
 
         if (!validator.validate(generatedTopic).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "LLM returned content in the wrong format");
+            throw new LlmResponseException("LLM returned content in the wrong format");
         }
 
         return generatedTopic;

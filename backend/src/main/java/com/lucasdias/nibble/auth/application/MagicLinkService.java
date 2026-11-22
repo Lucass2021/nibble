@@ -1,22 +1,20 @@
 package com.lucasdias.nibble.auth.application;
 
+import com.lucasdias.nibble.auth.domain.InvalidLoginException;
 import com.lucasdias.nibble.auth.domain.LoginToken;
 import com.lucasdias.nibble.auth.domain.LoginTokenRepository;
 import com.lucasdias.nibble.user.domain.User;
 import com.lucasdias.nibble.user.domain.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
 
@@ -55,27 +53,27 @@ public class MagicLinkService {
 
     public User verifyToken(String token) {
         LoginToken loginToken = loginTokenRepository.findByTokenHash(sha256(token))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+                .orElseThrow(() -> new InvalidLoginException());
 
         return consume(loginToken);
     }
 
     public User verifyCode(String email, String code) {
-        User user = userRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new InvalidLoginException());
 
         LoginToken loginToken = loginTokenRepository.findByUserAndCodeHash(user, sha256(code))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+                .orElseThrow(() -> new InvalidLoginException());
 
         return consume(loginToken);
     }
 
     private User consume(LoginToken loginToken){
         if (Instant.now().isAfter(loginToken.getExpiresAt())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+            throw new InvalidLoginException();
         }
 
         if (loginToken.getUsedAt() != null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+            throw new InvalidLoginException();
         }
 
         loginToken.markUsed();
