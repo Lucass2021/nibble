@@ -1,5 +1,8 @@
 package com.lucasdias.nibble.topic.openrouter;
 
+import tools.jackson.core.JacksonException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import tools.jackson.databind.json.JsonMapper;
 import com.lucasdias.nibble.topic.GeneratedTopic;
 import com.lucasdias.nibble.topic.LlmClient;
@@ -8,6 +11,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import jakarta.validation.Validator;
 import java.time.Duration;
 import java.util.List;
 
@@ -19,8 +23,9 @@ public class OpenRouterClient implements LlmClient {
 
     private final RestClient restClient;
     private final JsonMapper jsonMapper;
+    private final Validator validator;
 
-    public OpenRouterClient(@Value("${openrouter.base-url}") String baseUrl, JsonMapper jsonMapper) {
+    public OpenRouterClient(@Value("${openrouter.base-url}") String baseUrl, JsonMapper jsonMapper, Validator validator) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
 
         factory.setConnectTimeout(Duration.ofSeconds(3));
@@ -32,6 +37,7 @@ public class OpenRouterClient implements LlmClient {
                 .build();
 
         this.jsonMapper = jsonMapper;
+        this.validator = validator;
     }
 
     @Override
@@ -78,6 +84,17 @@ public class OpenRouterClient implements LlmClient {
 
         String content = response.choices().get(0).message().content();
 
-        return jsonMapper.readValue(content, GeneratedTopic.class);
+        GeneratedTopic generatedTopic;
+        try {
+            generatedTopic = jsonMapper.readValue(content, GeneratedTopic.class);
+        } catch (JacksonException error) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "LLM returned invalid JSON");
+        }
+
+        if (!validator.validate(generatedTopic).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "LLM returned content in the wrong format");
+        }
+
+        return generatedTopic;
     }
 }

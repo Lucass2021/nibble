@@ -1,6 +1,8 @@
 package com.lucasdias.nibble.topic;
 
+import jakarta.validation.constraints.NotBlank;
+
 public record GeneratedCard (
-        String title,
-        String content
+        @NotBlank String title,
+        @NotBlank String content
 ) { }
