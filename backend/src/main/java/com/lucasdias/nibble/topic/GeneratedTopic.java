@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record GeneratedTopic (
-        @NotNull @Size(min = 5, max = 5) List<@Valid GeneratedCard> cards,
-        @NotNull @Size(min = 3, max = 3) List<@Valid GeneratedQuestion> questions
-) { }
+        @NotNull @Size(min = CARD_COUNT, max = CARD_COUNT) List<@Valid GeneratedCard> cards,
+        @NotNull @Size(min = QUESTION_COUNT, max = QUESTION_COUNT) List<@Valid GeneratedQuestion> questions
+) {
+    public static final int CARD_COUNT = 5;
+    public static final int QUESTION_COUNT = 3;
+}

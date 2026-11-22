@@ -21,21 +21,25 @@ import java.util.HexFormat;
 @Service
 @RequiredArgsConstructor
 public class MagicLinkService {
+    private static final int TOKEN_BYTES = 32;
+    private static final int CODE_BOUND = 1_000_000;
+
+    private final SecureRandom random = new SecureRandom();
 
     private final UserRepository userRepository;
     private final LoginTokenRepository loginTokenRepository;
     private final JavaMailSender mailSender;
+    private final MagicLinkProperties properties;
 
     public void requestLink(String email) {
         User user = userRepository.findByEmail(email).orElseGet(() -> userRepository.save(new User(email)));
 
-        SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[32];
+        byte[] bytes = new byte[TOKEN_BYTES];
         random.nextBytes(bytes);
 
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        String code = String.format("%06d", random.nextInt(1_000_000));
-        Instant expiresAt = Instant.now().plus(15, ChronoUnit.MINUTES);
+        String code = String.format("%06d", random.nextInt(CODE_BOUND));
+        Instant expiresAt = Instant.now().plus(properties.expiration());
 
         LoginToken loginToken = new LoginToken(user, sha256(token), sha256(code), expiresAt);
         loginTokenRepository.save(loginToken);

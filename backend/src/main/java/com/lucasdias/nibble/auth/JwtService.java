@@ -5,26 +5,25 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 @Service
 public class JwtService {
-    @Value("${jwt.secret}")
-    private String secret;
+    private final JwtProperties properties;
+    private final SecretKey key;
 
-    @Value("${jwt.expiration-minutes}")
-    private long expirationMinutes;
+    public JwtService(JwtProperties properties) {
+        this.properties = properties;
+        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(properties.secret()));
+    }
 
-    public String generate(User user){
-        SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+    public String generate(User user) {
         Instant now = Instant.now();
-        Instant expiresAt = now.plus(expirationMinutes, ChronoUnit.MINUTES);
+        Instant expiresAt = now.plus(properties.expiration());
 
         return Jwts.builder()
                 .subject(user.getId().toString())
@@ -35,7 +34,6 @@ public class JwtService {
     }
 
     public Long parseUserId(String jwt) {
-        SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
         Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(jwt).getPayload();
         return Long.valueOf(claims.getSubject());
     }

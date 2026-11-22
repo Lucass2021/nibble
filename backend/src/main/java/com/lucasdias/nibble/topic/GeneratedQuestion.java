@@ -6,7 +6,9 @@ import java.util.List;
 
 public record GeneratedQuestion (
         @NotBlank String statement,
-        @NotNull @Size(min = 4, max = 4) List<String> options,
-        @Min(0) @Max(3) int correctOption,
+        @NotNull @Size(min = OPTION_COUNT, max = OPTION_COUNT) List<String> options,
+        @Min(0) @Max(OPTION_COUNT - 1) int correctOption,
         @NotBlank String explanation
-) { }
+) {
+    public static final int OPTION_COUNT = 4;
+}

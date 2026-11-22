@@ -1,41 +1,40 @@
 package com.lucasdias.nibble.topic.openrouter;
 
-import tools.jackson.core.JacksonException;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-import tools.jackson.databind.json.JsonMapper;
+import com.lucasdias.nibble.topic.GeneratedQuestion;
 import com.lucasdias.nibble.topic.GeneratedTopic;
 import com.lucasdias.nibble.topic.LlmClient;
-import org.springframework.beans.factory.annotation.Value;
+import jakarta.validation.Validator;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.server.ResponseStatusException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
-import jakarta.validation.Validator;
-import java.time.Duration;
 import java.util.List;
 
 
 @Service
 public class OpenRouterClient implements LlmClient {
-    @Value("${openrouter.model}")
-    private String model;
+    private final OpenRouterProperties properties;
 
     private final RestClient restClient;
     private final JsonMapper jsonMapper;
     private final Validator validator;
 
-    public OpenRouterClient(@Value("${openrouter.base-url}") String baseUrl, JsonMapper jsonMapper, Validator validator) {
+    public OpenRouterClient(OpenRouterProperties properties, JsonMapper jsonMapper, Validator validator) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
 
-        factory.setConnectTimeout(Duration.ofSeconds(3));
-        factory.setReadTimeout(Duration.ofSeconds(60));
+        factory.setConnectTimeout(properties.connectTimeout());
+        factory.setReadTimeout(properties.readTimeout());
 
         this.restClient = RestClient.builder()
-                .baseUrl(baseUrl)
+                .baseUrl(properties.baseUrl())
                 .requestFactory(factory)
                 .build();
 
+        this.properties = properties;
         this.jsonMapper = jsonMapper;
         this.validator = validator;
     }
@@ -60,17 +59,23 @@ public class OpenRouterClient implements LlmClient {
                   ]
                 }
                 Rules:
-                - 5 cards, each content with at most 3 short sentences.
-                - 3 questions, each with exactly 4 options.
+                - %d cards, each content with at most 3 short sentences.
+                - %d questions, each with exactly %d options.
                 - correctOption is the index of the right option, starting at 0.
                 - explanation says in one sentence why that option is right.
                 - Write every title, content, statement, option and explanation in this language: %s.
-                """.formatted(language);
+                """
+                .formatted(
+                    GeneratedTopic.CARD_COUNT,
+                    GeneratedTopic.QUESTION_COUNT,
+                    GeneratedQuestion.OPTION_COUNT,
+                    language
+                );
 
         OpenRouterMessage systemMessage = new OpenRouterMessage("system", systemPrompt);
         OpenRouterMessage userMessage = new OpenRouterMessage("user", topic);
         OpenRouterRequest openRouterRequest = new OpenRouterRequest(
-                model,
+                properties.model(),
                 List.of(systemMessage, userMessage),
                 new ResponseFormat("json_object")
         );

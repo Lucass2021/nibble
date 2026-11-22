@@ -17,6 +17,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
 
@@ -29,8 +30,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
 
         try {
-            if (header != null && header.startsWith("Bearer ")) {
-                String jwt = header.substring(7);
+            if (header != null && header.startsWith(BEARER_PREFIX)) {
+                String jwt = header.substring(BEARER_PREFIX.length());
                 Long userId = jwtService.parseUserId(jwt);
 
                 UsernamePasswordAuthenticationToken authentication =
