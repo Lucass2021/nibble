@@ -1,6 +1,7 @@
 package com.lucasdias.nibble.common.infrastructure.web;
 
 import com.lucasdias.nibble.auth.domain.InvalidLoginException;
+import com.lucasdias.nibble.topic.domain.InvalidLlmKeyException;
 import com.lucasdias.nibble.topic.domain.LlmResponseException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -21,6 +22,13 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleLlmResponse(LlmResponseException error) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, error.getMessage());
         problem.setProperty("code", "LLM_INVALID_RESPONSE");
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidLlmKeyException.class)
+    public ProblemDetail handleInvalidLlmKey(InvalidLlmKeyException error) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, error.getMessage());
+        problem.setProperty("code", "LLM_INVALID_KEY");
         return problem;
     }
 }

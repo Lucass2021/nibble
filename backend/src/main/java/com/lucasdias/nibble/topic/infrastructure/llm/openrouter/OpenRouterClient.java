@@ -1,10 +1,8 @@
 package com.lucasdias.nibble.topic.infrastructure.llm.openrouter;
 
-import com.lucasdias.nibble.topic.domain.GeneratedQuestion;
-import com.lucasdias.nibble.topic.domain.GeneratedTopic;
-import com.lucasdias.nibble.topic.domain.LlmClient;
-import com.lucasdias.nibble.topic.domain.LlmResponseException;
+import com.lucasdias.nibble.topic.domain.*;
 import jakarta.validation.Validator;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -64,10 +62,10 @@ public class OpenRouterClient implements LlmClient {
                 - Write every title, content, statement, option and explanation in this language: %s.
                 """
                 .formatted(
-                    GeneratedTopic.CARD_COUNT,
-                    GeneratedTopic.QUESTION_COUNT,
-                    GeneratedQuestion.OPTION_COUNT,
-                    language
+                        GeneratedTopic.CARD_COUNT,
+                        GeneratedTopic.QUESTION_COUNT,
+                        GeneratedQuestion.OPTION_COUNT,
+                        language
                 );
 
         OpenRouterMessage systemMessage = new OpenRouterMessage("system", systemPrompt);
@@ -83,6 +81,9 @@ public class OpenRouterClient implements LlmClient {
                 .header("Authorization", "Bearer " + apiKey)
                 .body(openRouterRequest)
                 .retrieve()
+                .onStatus(status -> status.isSameCodeAs(HttpStatus.UNAUTHORIZED), (request, errorResponse) -> {
+                    throw new InvalidLlmKeyException("Invalid LLM API key");
+                })
                 .body(OpenRouterResponse.class);
 
         String content = response.choices().get(0).message().content();
