@@ -3,6 +3,7 @@ package com.lucasdias.nibble.common.infrastructure.web;
 import com.lucasdias.nibble.auth.domain.InvalidLoginException;
 import com.lucasdias.nibble.topic.domain.InvalidLlmKeyException;
 import com.lucasdias.nibble.topic.domain.LlmResponseException;
+import com.lucasdias.nibble.topic.domain.LlmUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -29,6 +30,13 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleInvalidLlmKey(InvalidLlmKeyException error) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, error.getMessage());
         problem.setProperty("code", "LLM_INVALID_KEY");
+        return problem;
+    }
+
+    @ExceptionHandler(LlmUnavailableException.class)
+    public ProblemDetail handleLlmUnavailable(LlmUnavailableException error) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.GATEWAY_TIMEOUT, error.getMessage());
+        problem.setProperty("code", "LLM_UNAVAILABLE");
         return problem;
     }
 }

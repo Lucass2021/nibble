@@ -3,12 +3,14 @@ package com.lucasdias.nibble.topic.infrastructure.llm.openrouter;
 import com.lucasdias.nibble.topic.domain.*;
 import jakarta.validation.Validator;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.net.http.HttpClient;
 import java.util.List;
 
 @Service
@@ -20,9 +22,11 @@ public class OpenRouterClient implements LlmClient {
     private final Validator validator;
 
     public OpenRouterClient(OpenRouterProperties properties, JsonMapper jsonMapper, Validator validator) {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(properties.connectTimeout())
+                .build();
 
-        factory.setConnectTimeout(properties.connectTimeout());
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         factory.setReadTimeout(properties.readTimeout());
 
         this.restClient = RestClient.builder()
@@ -76,15 +80,22 @@ public class OpenRouterClient implements LlmClient {
                 new ResponseFormat("json_object")
         );
 
-        OpenRouterResponse response = restClient.post()
-                .uri("/chat/completions")
-                .header("Authorization", "Bearer " + apiKey)
-                .body(openRouterRequest)
-                .retrieve()
-                .onStatus(status -> status.isSameCodeAs(HttpStatus.UNAUTHORIZED), (request, errorResponse) -> {
-                    throw new InvalidLlmKeyException("Invalid LLM API key");
-                })
-                .body(OpenRouterResponse.class);
+        OpenRouterResponse response;
+
+        try {
+            response = restClient.post()
+                    .uri("/chat/completions")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .body(openRouterRequest)
+                    .retrieve()
+                    .onStatus(status -> status.isSameCodeAs(HttpStatus.UNAUTHORIZED), (request, errorResponse) -> {
+                        throw new InvalidLlmKeyException("Invalid LLM API key");
+                    })
+                    .body(OpenRouterResponse.class);
+        } catch (ResourceAccessException error) {
+            throw new LlmUnavailableException("LLM provider did not respond");
+        }
+
 
         String content = response.choices().get(0).message().content();
 
