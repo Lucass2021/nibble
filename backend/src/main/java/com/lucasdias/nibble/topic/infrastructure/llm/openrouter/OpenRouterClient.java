@@ -96,6 +96,9 @@ public class OpenRouterClient implements LlmClient {
             throw new LlmUnavailableException("LLM provider did not respond");
         }
 
+        if (!validator.validate(response).isEmpty()) {
+            throw new LlmResponseException("LLM returned no choices");
+        }
 
         String content = response.choices().get(0).message().content();
 
