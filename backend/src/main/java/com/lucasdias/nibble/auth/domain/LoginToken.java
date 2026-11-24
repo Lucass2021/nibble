@@ -33,8 +33,10 @@ public class LoginToken {
     @Column()
     private Instant usedAt;
 
-    public LoginToken(User user, String tokenHash, String codeHash, Instant expiresAt)
-    {
+    @Column(nullable = false)
+    private int attempts;
+
+    public LoginToken(User user, String tokenHash, String codeHash, Instant expiresAt) {
         this.user = user;
         this.tokenHash = tokenHash;
         this.codeHash = codeHash;
@@ -42,7 +44,11 @@ public class LoginToken {
     }
 
     public void markUsed() {
-         this.usedAt = Instant.now();
+        this.usedAt = Instant.now();
+    }
+
+    public void registerFailedAttempt() {
+        this.attempts++;
     }
 
 }

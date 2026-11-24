@@ -24,6 +24,7 @@ import java.util.HexFormat;
 public class MagicLinkService {
     private static final int TOKEN_BYTES = 32;
     private static final int CODE_BOUND = 1_000_000;
+    private static final int MAX_ATTEMPTS = 5;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -60,12 +61,21 @@ public class MagicLinkService {
         return consume(loginToken);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = InvalidLoginException.class)
     public User verifyCode(String email, String code) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new InvalidLoginException());
 
-        LoginToken loginToken = loginTokenRepository.findByUserAndCodeHash(user, sha256(code))
+        LoginToken loginToken = loginTokenRepository.findFirstByUserOrderByIdDesc(user)
                 .orElseThrow(() -> new InvalidLoginException());
+
+        if (loginToken.getAttempts() >= MAX_ATTEMPTS) {
+            throw new InvalidLoginException();
+        }
+
+        if (!sha256(code).equals(loginToken.getCodeHash())) {
+            loginToken.registerFailedAttempt();
+            throw new InvalidLoginException();
+        }
 
         return consume(loginToken);
     }

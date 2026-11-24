@@ -12,5 +12,5 @@ public interface LoginTokenRepository extends JpaRepository<LoginToken, Long> {
     Optional<LoginToken> findByTokenHash(String tokenHash);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<LoginToken> findByUserAndCodeHash(User user, String codeHash);
+    Optional<LoginToken> findFirstByUserOrderByIdDesc(User user);
 }

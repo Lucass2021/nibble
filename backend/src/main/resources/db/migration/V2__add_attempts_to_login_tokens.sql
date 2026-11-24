@@ -1,0 +1,1 @@
+ALTER TABLE login_tokens ADD COLUMN attempts INT NOT NULL DEFAULT 0;
