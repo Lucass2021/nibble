@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -51,6 +52,7 @@ public class MagicLinkService {
         mailSender.send(message);
     }
 
+    @Transactional
     public User verifyToken(String token) {
         LoginToken loginToken = loginTokenRepository.findByTokenHash(sha256(token))
                 .orElseThrow(() -> new InvalidLoginException());
@@ -58,6 +60,7 @@ public class MagicLinkService {
         return consume(loginToken);
     }
 
+    @Transactional
     public User verifyCode(String email, String code) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new InvalidLoginException());
 
@@ -67,7 +70,7 @@ public class MagicLinkService {
         return consume(loginToken);
     }
 
-    private User consume(LoginToken loginToken){
+    private User consume(LoginToken loginToken) {
         if (Instant.now().isAfter(loginToken.getExpiresAt())) {
             throw new InvalidLoginException();
         }
@@ -77,7 +80,6 @@ public class MagicLinkService {
         }
 
         loginToken.markUsed();
-        loginTokenRepository.save(loginToken);
 
         return loginToken.getUser();
     }
