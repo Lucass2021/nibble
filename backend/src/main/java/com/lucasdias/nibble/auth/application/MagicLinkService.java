@@ -3,6 +3,7 @@ package com.lucasdias.nibble.auth.application;
 import com.lucasdias.nibble.auth.domain.InvalidLoginException;
 import com.lucasdias.nibble.auth.domain.LoginToken;
 import com.lucasdias.nibble.auth.domain.LoginTokenRepository;
+import com.lucasdias.nibble.auth.domain.TooManyLoginRequestsException;
 import com.lucasdias.nibble.user.domain.User;
 import com.lucasdias.nibble.user.domain.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class MagicLinkService {
     private static final int TOKEN_BYTES = 32;
     private static final int CODE_BOUND = 1_000_000;
     private static final int MAX_ATTEMPTS = 5;
+    private static final int MAX_LINK_REQUESTS = 3;
 
     private final SecureRandom random = new SecureRandom();
 
@@ -35,6 +37,12 @@ public class MagicLinkService {
 
     public void requestLink(String email) {
         User user = userRepository.findByEmail(email).orElseGet(() -> userRepository.save(new User(email)));
+
+        long activeTokenCount = loginTokenRepository.countByUserAndExpiresAtAfter(user, Instant.now());
+
+        if (activeTokenCount >= MAX_LINK_REQUESTS) {
+            throw new TooManyLoginRequestsException();
+        }
 
         byte[] bytes = new byte[TOKEN_BYTES];
         random.nextBytes(bytes);

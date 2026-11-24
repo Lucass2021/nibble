@@ -1,6 +1,7 @@
 package com.lucasdias.nibble.common.infrastructure.web;
 
 import com.lucasdias.nibble.auth.domain.InvalidLoginException;
+import com.lucasdias.nibble.auth.domain.TooManyLoginRequestsException;
 import com.lucasdias.nibble.topic.domain.InvalidLlmKeyException;
 import com.lucasdias.nibble.topic.domain.LlmResponseException;
 import com.lucasdias.nibble.topic.domain.LlmUnavailableException;
@@ -37,6 +38,13 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleLlmUnavailable(LlmUnavailableException error) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.GATEWAY_TIMEOUT, error.getMessage());
         problem.setProperty("code", "LLM_UNAVAILABLE");
+        return problem;
+    }
+
+    @ExceptionHandler(TooManyLoginRequestsException.class)
+    public ProblemDetail handleTooManyLoginRequests(TooManyLoginRequestsException error) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, error.getMessage());
+        problem.setProperty("code", "TOO_MANY_LOGIN_REQUESTS");
         return problem;
     }
 }

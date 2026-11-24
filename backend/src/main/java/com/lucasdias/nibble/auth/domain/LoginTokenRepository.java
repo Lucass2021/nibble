@@ -5,6 +5,7 @@ import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 
+import java.time.Instant;
 import java.util.Optional;
 
 public interface LoginTokenRepository extends JpaRepository<LoginToken, Long> {
@@ -13,4 +14,6 @@ public interface LoginTokenRepository extends JpaRepository<LoginToken, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<LoginToken> findFirstByUserOrderByIdDesc(User user);
+
+    long countByUserAndExpiresAtAfter(User user, Instant now);
 }
