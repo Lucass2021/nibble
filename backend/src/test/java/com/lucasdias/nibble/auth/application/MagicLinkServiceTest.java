@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -68,5 +68,44 @@ class MagicLinkServiceTest {
         when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
 
         assertThrows(InvalidLoginException.class, () -> magicLinkService.verifyCode(EMAIL, CODE));
+    }
+
+    @Test
+    void verifyCode_registersAttemptWhenCodeIsWrong() {
+        User user = new User(EMAIL);
+        LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
+        int expectedAttempts = 1;
+
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
+
+        assertThrows(InvalidLoginException.class, () -> magicLinkService.verifyCode(EMAIL, "123123"));
+        assertEquals(expectedAttempts, loginToken.getAttempts());
+    }
+
+    @Test
+    void verifyCode_returnsUserWhenCodeIsRight() {
+        User user = new User(EMAIL);
+        LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
+
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
+
+        User result = magicLinkService.verifyCode(EMAIL, CODE);
+
+        assertEquals(user, result);
+        assertNotNull(loginToken.getUsedAt());
+    }
+
+    @Test
+    void verifyCode_throwsWhenTokenIsExpired() {
+        User user = new User(EMAIL);
+        LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().minus(Duration.ofMinutes(15)));
+
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+        when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
+
+        assertThrows(InvalidLoginException.class, () -> magicLinkService.verifyCode(EMAIL, CODE));
+        assertNull(loginToken.getUsedAt());
     }
 }
