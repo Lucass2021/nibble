@@ -93,7 +93,7 @@ public class OpenRouterClient implements LlmClient {
                     })
                     .body(OpenRouterResponse.class);
         } catch (ResourceAccessException error) {
-            throw new LlmUnavailableException("LLM provider did not respond");
+            throw new LlmUnavailableException("LLM provider did not respond", error);
         }
 
         if (!validator.validate(response).isEmpty()) {
@@ -106,7 +106,7 @@ public class OpenRouterClient implements LlmClient {
         try {
             generatedTopic = jsonMapper.readValue(content, GeneratedTopic.class);
         } catch (JacksonException error) {
-            throw new LlmResponseException("LLM returned invalid JSON");
+            throw new LlmResponseException("LLM returned invalid JSON", error);
         }
 
         if (!validator.validate(generatedTopic).isEmpty()) {
