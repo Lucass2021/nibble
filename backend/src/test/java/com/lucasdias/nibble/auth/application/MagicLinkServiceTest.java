@@ -6,6 +6,7 @@ import com.lucasdias.nibble.auth.domain.LoginTokenRepository;
 import com.lucasdias.nibble.auth.domain.TooManyLoginRequestsException;
 import com.lucasdias.nibble.user.domain.User;
 import com.lucasdias.nibble.user.domain.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,27 +45,31 @@ class MagicLinkServiceTest {
     @InjectMocks
     private MagicLinkService magicLinkService;
 
+    private User user;
+
+    @BeforeEach
+    void setUp() {
+        user = new User(EMAIL);
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
+    }
+
     @Test
     void requestLink_throwsWhenThreeLinksAreActive() {
-        User user = new User("lucas@email.com");
-        when(userRepository.findByEmail("lucas@email.com")).thenReturn(Optional.of(user));
         when(loginTokenRepository.countByUserAndExpiresAtAfter(eq(user), any(Instant.class))).thenReturn(3L);
 
-        assertThrows(TooManyLoginRequestsException.class, () -> magicLinkService.requestLink("lucas@email.com"));
+        assertThrows(TooManyLoginRequestsException.class, () -> magicLinkService.requestLink(EMAIL));
 
         verify(mailSender, never()).send(any(SimpleMailMessage.class));
     }
 
     @Test
     void verifyCode_throwsWhenTokenHasFiveFailedAttempts() {
-        User user = new User(EMAIL);
         LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
 
         for (int i = 0; i < 5; i++) {
             loginToken.registerFailedAttempt();
         }
 
-        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
 
         assertThrows(InvalidLoginException.class, () -> magicLinkService.verifyCode(EMAIL, CODE));
@@ -72,11 +77,9 @@ class MagicLinkServiceTest {
 
     @Test
     void verifyCode_registersAttemptWhenCodeIsWrong() {
-        User user = new User(EMAIL);
         LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
         int expectedAttempts = 1;
 
-        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
 
         assertThrows(InvalidLoginException.class, () -> magicLinkService.verifyCode(EMAIL, "123123"));
@@ -85,10 +88,8 @@ class MagicLinkServiceTest {
 
     @Test
     void verifyCode_returnsUserWhenCodeIsRight() {
-        User user = new User(EMAIL);
         LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
 
-        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
 
         User result = magicLinkService.verifyCode(EMAIL, CODE);
@@ -99,13 +100,22 @@ class MagicLinkServiceTest {
 
     @Test
     void verifyCode_throwsWhenTokenIsExpired() {
-        User user = new User(EMAIL);
         LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().minus(Duration.ofMinutes(15)));
 
-        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user));
         when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
 
         assertThrows(InvalidLoginException.class, () -> magicLinkService.verifyCode(EMAIL, CODE));
         assertNull(loginToken.getUsedAt());
+    }
+
+
+    @Test
+    void verifyCode_throwsWhenTokenWasAlreadyUsed() {
+        LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
+        loginToken.markUsed();
+
+        when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
+
+        assertThrows(InvalidLoginException.class, () -> magicLinkService.verifyCode(EMAIL, CODE));
     }
 }
