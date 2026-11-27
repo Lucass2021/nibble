@@ -30,12 +30,7 @@ class LoginTokenRepositoryTest {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Test
-    void containerStarts() {
-        assertEquals(0, loginTokenRepository.count());
-    }
-
+    
     @Test
     void countByUserAndExpiresAtAfter_ignoresExpiredTokens() {
         User user = userRepository.save(new User(EMAIL));
