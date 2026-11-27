@@ -1,0 +1,8 @@
+#!/bin/sh
+# Formats staged Java files with Spotless before each commit.
+STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'backend/*.java')
+[ -z "$STAGED" ] && exit 0
+
+(cd backend && ./mvnw -q spotless:apply) || exit 1
+
+echo "$STAGED" | xargs git add
