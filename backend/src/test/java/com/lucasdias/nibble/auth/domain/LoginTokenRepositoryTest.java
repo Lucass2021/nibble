@@ -1,36 +1,33 @@
 package com.lucasdias.nibble.auth.domain;
 
+import com.lucasdias.nibble.TestcontainersConfiguration;
 import com.lucasdias.nibble.user.domain.User;
 import com.lucasdias.nibble.user.domain.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.junit.jupiter.Container;
+import org.springframework.context.annotation.Import;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.time.Duration;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@Import(TestcontainersConfiguration.class)
 @DataJpaTest
 @Testcontainers
 class LoginTokenRepositoryTest {
     private static final String EMAIL = "lucas@email.com";
     private static final String CODE_HASH = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
 
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17");
 
     @Autowired
     private LoginTokenRepository loginTokenRepository;
 
     @Autowired
     private UserRepository userRepository;
-    
+
     @Test
     void countByUserAndExpiresAtAfter_ignoresExpiredTokens() {
         User user = userRepository.save(new User(EMAIL));
