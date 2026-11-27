@@ -54,4 +54,21 @@ class LoginTokenRepositoryTest {
 
         assertEquals(2, loginTokenRepository.countByUserAndExpiresAtAfter(user, Instant.now()));
     }
+
+    @Test
+    void findFirstByUserOrderByIdDesc_returnsNewestToken() {
+        User user = userRepository.save(new User(EMAIL));
+
+        loginTokenRepository.save(
+                new LoginToken(user, "token-hash-1", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)))
+        );
+
+        loginTokenRepository.save(
+                new LoginToken(user, "token-hash-2", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)))
+        );
+
+        LoginToken newest = loginTokenRepository.findFirstByUserOrderByIdDesc(user).orElseThrow();
+
+        assertEquals("token-hash-2", newest.getTokenHash());
+    }
 }
