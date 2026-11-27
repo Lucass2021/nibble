@@ -22,6 +22,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(AuthController.class)
 @Import(SecurityConfig.class)
 class AuthControllerTest {
+    private static final String EMAIL = "lucas@email.com";
+    private static final String CODE = "123123";
+    private static final String JWT = "fake-jwt";
 
     @Autowired
     private MockMvc mockMvc;
@@ -34,13 +37,13 @@ class AuthControllerTest {
 
     @Test
     void verifyCode_returns401WhenCodeIsWrong() throws Exception {
-        when(magicLinkService.verifyCode("lucas@email.com", "123123")).thenThrow(InvalidLoginException.class);
+        when(magicLinkService.verifyCode(EMAIL, CODE)).thenThrow(InvalidLoginException.class);
 
         mockMvc.perform(post("/auth/verify-code")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "lucas@email.com", "code": "123123" }
-                                """))
+                                { "email": "%s", "code": "%s" }
+                                """.formatted(EMAIL, CODE)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("INVALID_LOGIN"));
     }
@@ -50,8 +53,8 @@ class AuthControllerTest {
         mockMvc.perform(post("/auth/verify-code")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "lucas@email.com", "code": "1234567" }
-                                """))
+                                { "email": "%s", "code": "1234567" }
+                                """.formatted(EMAIL)))
                 .andExpect(status().isBadRequest());
 
         verify(magicLinkService, never()).verifyCode(anyString(), anyString());
@@ -59,17 +62,17 @@ class AuthControllerTest {
 
     @Test
     void verifyCode_returnsJwtWhenCodeIsRight() throws Exception {
-        User user = new User("lucas@email.com");
+        User user = new User(EMAIL);
 
-        when(magicLinkService.verifyCode("lucas@email.com", "123123")).thenReturn(user);
-        when(jwtService.generate(user)).thenReturn("fake-jwt");
+        when(magicLinkService.verifyCode(EMAIL, CODE)).thenReturn(user);
+        when(jwtService.generate(user)).thenReturn(JWT);
 
         mockMvc.perform(post("/auth/verify-code")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "email": "lucas@email.com", "code": "123123" }
-                                """))
+                                { "email": "%s", "code": "%s" }
+                                """.formatted(EMAIL, CODE)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.jwt").value("fake-jwt"));
+                .andExpect(jsonPath("$.jwt").value(JWT));
     }
 }

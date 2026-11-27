@@ -19,6 +19,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(TopicController.class)
 @Import(SecurityConfig.class)
 class TopicControllerTest {
+    private static final String JWT = "fake-jwt";
+    private static final String API_KEY = "sk-test";
+    private static final String TITLE = "Kotlin";
 
     @Autowired
     private MockMvc mockMvc;
@@ -33,29 +36,28 @@ class TopicControllerTest {
     void create_returns401WithoutJwt() throws Exception {
         mockMvc.perform(post("/topics")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-OpenRouter-Key", "sk-test")
+                        .header("X-OpenRouter-Key", API_KEY)
                         .content("""
-                                { "title": "Kotlin" }
-                                """))
+                                { "title": "%s" }
+                                """.formatted(TITLE)))
                 .andExpect(status().isUnauthorized());
 
         verify(llmClient, never()).generate(anyString(), anyString(), anyString());
     }
 
-
     @Test
     void create_returnsAcceptedWithValidJwt() throws Exception {
-        when(jwtService.parseUserId("fake-jwt")).thenReturn(1L);
+        when(jwtService.parseUserId(JWT)).thenReturn(1L);
 
         mockMvc.perform(post("/topics")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-OpenRouter-Key", "sk-test")
-                        .header("Authorization", "Bearer fake-jwt")
+                        .header("X-OpenRouter-Key", API_KEY)
+                        .header("Authorization", "Bearer " + JWT)
                         .content("""
-                                { "title": "Kotlin" }
-                                """))
+                                { "title": "%s" }
+                                """.formatted(TITLE)))
                 .andExpect(status().isAccepted());
 
-        verify(llmClient).generate("Kotlin", "en", "sk-test");
+        verify(llmClient).generate(TITLE, "en", API_KEY);
     }
 }
