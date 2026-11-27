@@ -12,8 +12,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,4 +42,20 @@ class TopicControllerTest {
         verify(llmClient, never()).generate(anyString(), anyString(), anyString());
     }
 
+
+    @Test
+    void create_returnsAcceptedWithValidJwt() throws Exception {
+        when(jwtService.parseUserId("fake-jwt")).thenReturn(1L);
+
+        mockMvc.perform(post("/topics")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("X-OpenRouter-Key", "sk-test")
+                        .header("Authorization", "Bearer fake-jwt")
+                        .content("""
+                                { "title": "Kotlin" }
+                                """))
+                .andExpect(status().isAccepted());
+
+        verify(llmClient).generate("Kotlin", "en", "sk-test");
+    }
 }
