@@ -6,12 +6,6 @@ import com.lucasdias.nibble.auth.domain.LoginTokenRepository;
 import com.lucasdias.nibble.auth.domain.TooManyLoginRequestsException;
 import com.lucasdias.nibble.user.domain.User;
 import com.lucasdias.nibble.user.domain.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -19,6 +13,11 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
+import lombok.RequiredArgsConstructor;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -63,8 +62,8 @@ public class MagicLinkService {
 
     @Transactional
     public User verifyToken(String token) {
-        LoginToken loginToken = loginTokenRepository.findByTokenHash(sha256(token))
-                .orElseThrow(() -> new InvalidLoginException());
+        LoginToken loginToken =
+                loginTokenRepository.findByTokenHash(sha256(token)).orElseThrow(() -> new InvalidLoginException());
 
         return consume(loginToken);
     }
@@ -73,8 +72,8 @@ public class MagicLinkService {
     public User verifyCode(String email, String code) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new InvalidLoginException());
 
-        LoginToken loginToken = loginTokenRepository.findFirstByUserOrderByIdDesc(user)
-                .orElseThrow(() -> new InvalidLoginException());
+        LoginToken loginToken =
+                loginTokenRepository.findFirstByUserOrderByIdDesc(user).orElseThrow(() -> new InvalidLoginException());
 
         if (loginToken.getAttempts() >= MAX_ATTEMPTS) {
             throw new InvalidLoginException();

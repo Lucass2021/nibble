@@ -2,11 +2,10 @@ package com.lucasdias.nibble.auth.domain;
 
 import com.lucasdias.nibble.user.domain.User;
 import jakarta.persistence.*;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
 
 @Entity
 @Table(name = "login_tokens")
@@ -50,5 +49,4 @@ public class LoginToken {
     public void registerFailedAttempt() {
         this.attempts++;
     }
-
 }

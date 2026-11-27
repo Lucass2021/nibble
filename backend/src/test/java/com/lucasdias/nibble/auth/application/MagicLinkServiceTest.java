@@ -1,11 +1,19 @@
 package com.lucasdias.nibble.auth.application;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
 import com.lucasdias.nibble.auth.domain.InvalidLoginException;
 import com.lucasdias.nibble.auth.domain.LoginToken;
 import com.lucasdias.nibble.auth.domain.LoginTokenRepository;
 import com.lucasdias.nibble.auth.domain.TooManyLoginRequestsException;
 import com.lucasdias.nibble.user.domain.User;
 import com.lucasdias.nibble.user.domain.UserRepository;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,15 +22,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MagicLinkServiceTest {
@@ -55,7 +54,8 @@ class MagicLinkServiceTest {
 
     @Test
     void requestLink_throwsWhenThreeLinksAreActive() {
-        when(loginTokenRepository.countByUserAndExpiresAtAfter(eq(user), any(Instant.class))).thenReturn(3L);
+        when(loginTokenRepository.countByUserAndExpiresAtAfter(eq(user), any(Instant.class)))
+                .thenReturn(3L);
 
         assertThrows(TooManyLoginRequestsException.class, () -> magicLinkService.requestLink(EMAIL));
 
@@ -64,7 +64,8 @@ class MagicLinkServiceTest {
 
     @Test
     void verifyCode_throwsWhenTokenHasFiveFailedAttempts() {
-        LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
+        LoginToken loginToken =
+                new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
 
         for (int i = 0; i < 5; i++) {
             loginToken.registerFailedAttempt();
@@ -77,7 +78,8 @@ class MagicLinkServiceTest {
 
     @Test
     void verifyCode_registersAttemptWhenCodeIsWrong() {
-        LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
+        LoginToken loginToken =
+                new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
         int expectedAttempts = 1;
 
         when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
@@ -88,7 +90,8 @@ class MagicLinkServiceTest {
 
     @Test
     void verifyCode_returnsUserWhenCodeIsRight() {
-        LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
+        LoginToken loginToken =
+                new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
 
         when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
 
@@ -100,7 +103,8 @@ class MagicLinkServiceTest {
 
     @Test
     void verifyCode_throwsWhenTokenIsExpired() {
-        LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().minus(Duration.ofMinutes(15)));
+        LoginToken loginToken =
+                new LoginToken(user, "token-hash", CODE_HASH, Instant.now().minus(Duration.ofMinutes(15)));
 
         when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));
 
@@ -108,10 +112,10 @@ class MagicLinkServiceTest {
         assertNull(loginToken.getUsedAt());
     }
 
-
     @Test
     void verifyCode_throwsWhenTokenWasAlreadyUsed() {
-        LoginToken loginToken = new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
+        LoginToken loginToken =
+                new LoginToken(user, "token-hash", CODE_HASH, Instant.now().plus(Duration.ofMinutes(15)));
         loginToken.markUsed();
 
         when(loginTokenRepository.findFirstByUserOrderByIdDesc(user)).thenReturn(Optional.of(loginToken));

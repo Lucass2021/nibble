@@ -8,8 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @ConfigurationPropertiesScan
 public class NibbleApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(NibbleApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(NibbleApplication.class, args);
+    }
 }

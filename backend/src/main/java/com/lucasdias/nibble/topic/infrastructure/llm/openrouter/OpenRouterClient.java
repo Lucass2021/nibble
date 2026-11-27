@@ -2,6 +2,8 @@ package com.lucasdias.nibble.topic.infrastructure.llm.openrouter;
 
 import com.lucasdias.nibble.topic.domain.*;
 import jakarta.validation.Validator;
+import java.net.http.HttpClient;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -9,9 +11,6 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
-
-import java.net.http.HttpClient;
-import java.util.List;
 
 @Service
 public class OpenRouterClient implements LlmClient {
@@ -64,26 +63,19 @@ public class OpenRouterClient implements LlmClient {
                 - correctOption is the index of the right option, starting at 0.
                 - explanation says in one sentence why that option is right.
                 - Write every title, content, statement, option and explanation in this language: %s.
-                """
-                .formatted(
-                        GeneratedTopic.CARD_COUNT,
-                        GeneratedTopic.QUESTION_COUNT,
-                        GeneratedQuestion.OPTION_COUNT,
-                        language
-                );
+                """.formatted(
+                GeneratedTopic.CARD_COUNT, GeneratedTopic.QUESTION_COUNT, GeneratedQuestion.OPTION_COUNT, language);
 
         OpenRouterMessage systemMessage = new OpenRouterMessage("system", systemPrompt);
         OpenRouterMessage userMessage = new OpenRouterMessage("user", topic);
         OpenRouterRequest openRouterRequest = new OpenRouterRequest(
-                properties.model(),
-                List.of(systemMessage, userMessage),
-                new ResponseFormat("json_object")
-        );
+                properties.model(), List.of(systemMessage, userMessage), new ResponseFormat("json_object"));
 
         OpenRouterResponse response;
 
         try {
-            response = restClient.post()
+            response = restClient
+                    .post()
                     .uri("/chat/completions")
                     .header("Authorization", "Bearer " + apiKey)
                     .body(openRouterRequest)

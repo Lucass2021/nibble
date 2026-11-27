@@ -5,11 +5,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
+import javax.crypto.SecretKey;
+import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
@@ -34,7 +33,8 @@ public class JwtService {
     }
 
     public Long parseUserId(String jwt) {
-        Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(jwt).getPayload();
+        Claims claims =
+                Jwts.parser().verifyWith(key).build().parseSignedClaims(jwt).getPayload();
         return Long.valueOf(claims.getSubject());
     }
 }

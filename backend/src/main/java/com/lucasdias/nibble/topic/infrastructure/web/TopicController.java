@@ -18,9 +18,7 @@ public class TopicController {
     public GeneratedTopic create(
             @RequestHeader("X-OpenRouter-Key") String apiKey,
             @RequestHeader(value = "Accept-Language", defaultValue = "en") String language,
-            @Valid @RequestBody CreateTopicRequest request
-    ) {
+            @Valid @RequestBody CreateTopicRequest request) {
         return llmClient.generate(request.title(), language, apiKey);
     }
-
 }

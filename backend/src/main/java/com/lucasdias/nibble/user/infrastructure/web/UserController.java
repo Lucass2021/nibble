@@ -17,10 +17,9 @@ public class UserController {
 
     @GetMapping("/me")
     public MeResponse me(@AuthenticationPrincipal Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
 
         return new MeResponse(user.getId(), user.getEmail());
     }
-
 }
