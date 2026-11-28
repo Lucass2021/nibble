@@ -1,9 +1,6 @@
 package com.lucasdias.nibble.auth.application;
 
-import com.lucasdias.nibble.auth.domain.InvalidLoginException;
-import com.lucasdias.nibble.auth.domain.LoginToken;
-import com.lucasdias.nibble.auth.domain.LoginTokenRepository;
-import com.lucasdias.nibble.auth.domain.TooManyLoginRequestsException;
+import com.lucasdias.nibble.auth.domain.*;
 import com.lucasdias.nibble.user.domain.User;
 import com.lucasdias.nibble.user.domain.UserRepository;
 import java.nio.charset.StandardCharsets;
@@ -14,8 +11,6 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,8 +26,8 @@ public class MagicLinkService {
 
     private final UserRepository userRepository;
     private final LoginTokenRepository loginTokenRepository;
-    private final JavaMailSender mailSender;
     private final MagicLinkProperties properties;
+    private final EmailSender emailSender;
 
     public void requestLink(String email) {
         User user = userRepository.findByEmail(email).orElseGet(() -> userRepository.save(new User(email)));
@@ -53,11 +48,7 @@ public class MagicLinkService {
         LoginToken loginToken = new LoginToken(user, sha256(token), sha256(code), expiresAt);
         loginTokenRepository.save(loginToken);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Your Nibble login link");
-        message.setText("Tap to log in: nibble://login?token=" + token + "\n\nOr type this code: " + code);
-        mailSender.send(message);
+        emailSender.sendLoginEmail(email, token, code);
     }
 
     @Transactional

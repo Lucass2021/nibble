@@ -5,10 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-import com.lucasdias.nibble.auth.domain.InvalidLoginException;
-import com.lucasdias.nibble.auth.domain.LoginToken;
-import com.lucasdias.nibble.auth.domain.LoginTokenRepository;
-import com.lucasdias.nibble.auth.domain.TooManyLoginRequestsException;
+import com.lucasdias.nibble.auth.domain.*;
 import com.lucasdias.nibble.user.domain.User;
 import com.lucasdias.nibble.user.domain.UserRepository;
 import java.time.Duration;
@@ -20,8 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 
 @ExtendWith(MockitoExtension.class)
 class MagicLinkServiceTest {
@@ -36,7 +31,7 @@ class MagicLinkServiceTest {
     private LoginTokenRepository loginTokenRepository;
 
     @Mock
-    private JavaMailSender mailSender;
+    private EmailSender emailSender;
 
     @Mock
     private MagicLinkProperties properties;
@@ -59,7 +54,7 @@ class MagicLinkServiceTest {
 
         assertThrows(TooManyLoginRequestsException.class, () -> magicLinkService.requestLink(EMAIL));
 
-        verify(mailSender, never()).send(any(SimpleMailMessage.class));
+        verify(emailSender, never()).sendLoginEmail(anyString(), anyString(), anyString());
     }
 
     @Test
